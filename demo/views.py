@@ -12,7 +12,7 @@ from . import msg_pb2_grpc
 # Create your views here.
 
 g = Graph(
-    host="192.168.145.24",
+    host="localhost",
     http_port=7474,
     user="neo4j",
     password="123"
@@ -59,7 +59,7 @@ def req_search(request):
 def req_qa(request):
     question = request.GET.get('input_text')
 
-    with grpc.insecure_channel('localhost:50051') as channel:
+    with grpc.insecure_channel('localhost:50001') as channel:
         stub = msg_pb2_grpc.MsgServiceStub(channel)
         response = stub.GetMsg(msg_pb2.MsgRequest(question=question))
 
@@ -118,7 +118,7 @@ def entity_graph(request):
             "style": {"label": node["value"]},
         })
         res["links"].append({
-            "id": node.identity,
+            "id": str(node.identity) + '-' + str(e_id),
             "from": node.identity,
             "to": e_id,
             "style": {"fillColor":"red", "toDecoration":"arrow", "label": rel}
@@ -136,6 +136,7 @@ def entity_graph(request):
             "style": {"label": node["value"]},
         })
         res["links"].append({
+            "id": str(e_id) + '-' + str(node.identity),
             "from": e_id,
             "to": node.identity,
             "style": {"fillColor": "red", "toDecoration": "arrow", "label": rel}
