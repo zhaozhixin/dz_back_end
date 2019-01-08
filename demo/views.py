@@ -28,12 +28,19 @@ def req_recommand(request):
         return HttpResponse('not found')
 
     answer = json.loads(response.answer)
-    print(answer)
+    answer_ret = answer['answer']
+    for i in range(len(answer_ret)):
+        for k, v in answer_ret[i].items():
+            for j in range(len(v)):
+                res = v[j].split('|||')
+                if len(res) > 1:
+                    answer_ret[i][k][j] = "<a href='" + res[1] + "' target='_blank'>" + res[0] + "</a>"
 
     msg = json.dumps({
         'entities': answer['entities'],
-        'recommand': answer['answer'],
+        'recommand': answer_ret,
     })
+
     return HttpResponse(msg)
 
 def req_search(request):
