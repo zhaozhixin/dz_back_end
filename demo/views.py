@@ -11,12 +11,7 @@ from . import msg_pb2_grpc
 
 # Create your views here.
 
-g = Graph(
-    host="localhost",
-    http_port=7474,
-    user="neo4j",
-    password="123"
-)
+g = Graph("bolt://localhost:7475", password='123')
 
 def index(request):
     return render(request, 'index.html')
