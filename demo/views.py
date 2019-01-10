@@ -49,12 +49,15 @@ def req_recommand(request):
 
     answer = json.loads(response.answer)
     answer_ret = answer['answer']
-    for i in range(len(answer_ret)):
-        for k, v in answer_ret[i].items():
-            for j in range(len(v)):
-                res = v[j].split('|||')
-                if len(res) > 1:
-                    answer_ret[i][k][j] = "<a href='" + res[1] + "' target='_blank'>" + res[0] + "</a>"
+    try:
+        for i in range(len(answer_ret)):
+            for k, v in answer_ret[i].items():
+                for j in range(len(v)):
+                    res = v[j].split('|||')
+                    if len(res) > 1:
+                        answer_ret[i][k][j] = "<a href='" + res[1] + "' target='_blank'>" + res[0] + "</a>"
+    except Exception as e:
+        pass
 
     msg = json.dumps({
         'entities': answer['entities'],
