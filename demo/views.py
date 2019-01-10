@@ -11,7 +11,7 @@ from . import msg_pb2_grpc
 
 # Create your views here.
 
-g = Graph("bolt://120.92.208.22:7475", password='123')
+g = Graph("bolt://localhost:7475", password='123')
 style_dict = {
     "Person": "rgba(111,200,184,1)",
     "Interview": "rgba(255,214,24,1)",
