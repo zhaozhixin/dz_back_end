@@ -104,7 +104,7 @@ def req_qa(request):
 def entity_graph(request):
     value = request.GET.get('value')
     label = request.GET.get('label')
-    label = label[0].upper() + label[1:].lower()
+    label = label[0].upper() + label[1:]
     query1 = "MATCH (e:{0}) where e.value = '{1}' return e".format(label,value)
     query2 = "MATCH (h)-[r]->(e:{0}) where e.value = '{1}' return h,type(r) as r,r.name as n limit 50".format(label,value)
     query3 = "MATCH (e:{0})-[r]->(t) where e.value = '{1}' return t,type(r) as r,r.name as n limit 50".format(label,value)
