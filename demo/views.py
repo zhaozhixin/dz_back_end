@@ -11,7 +11,27 @@ from . import msg_pb2_grpc
 
 # Create your views here.
 
-g = Graph("bolt://localhost:7475", password='123')
+g = Graph("bolt://120.92.208.22:7475", password='123')
+style_dict = {
+    "Person": "rgba(111,200,184,1)",
+    "Interview": "rgba(255,214,24,1)",
+    "Activity": "rgba(47,195,47,1)",
+    "Meeting": "rgba(86,185,247,1)",
+    "Talking": "rgba(234,180,4,1)",
+    "Org": "rgba(222,103,44,1)",
+    "Area": "rgba(222,103,44,1)",
+    "Adminregion": "rgba(222,103,44,1)",
+    "Autoregion": "rgba(222,103,44,1)",
+    "Convention": "rgba(222,103,44,1)",
+    "Country": "rgba(222,103,44,1)",
+    "Municipality": "rgba(222,103,44,1)",
+    "Personnel": "rgba(222,103,44,1)",
+    "Province": "rgba(222,103,44,1)",
+    "Report": "rgba(222,103,44,1)",
+    "SubOrg": "rgba(222,103,44,1)",
+    "Session": "rgba(222,103,44,1)",
+}
+
 
 def index(request):
     return render(request, 'index.html')
@@ -83,8 +103,8 @@ def entity_graph(request):
     label = request.GET.get('label')
     label = label[0].upper() + label[1:].lower()
     query1 = "MATCH (e:{0}) where e.value = '{1}' return e".format(label,value)
-    query2 = "MATCH (h)-[r]->(e:{0}) where e.value = '{1}' return h,type(r) as r limit 50".format(label,value)
-    query3 = "MATCH (e:{0})-[r]->(t) where e.value = '{1}' return t,type(r) as r limit 50".format(label,value)
+    query2 = "MATCH (h)-[r]->(e:{0}) where e.value = '{1}' return h,type(r) as r,r.name as n limit 50".format(label,value)
+    query3 = "MATCH (e:{0})-[r]->(t) where e.value = '{1}' return t,type(r) as r,r.name as n limit 50".format(label,value)
 
     res1 = g.run(query1).data()
     res2 = g.run(query2).data()
@@ -105,43 +125,48 @@ def entity_graph(request):
             "id": node.identity,
             "label": label,
             "props": props,
-            "style": {"label": node["value"]},
+            "style": {"label": node["value"],"fillColor": style_dict[label]},
         })
 
     for item in res2:
         node = item['h']
         rel = item['r']
+        rel_name = item['n']
         props = dict(node)
         label = list(node.labels)[0]
         res["nodes"].append({
             "id": node.identity,
             "label": label,
             "props": props,
-            "style": {"label": node["value"]},
+            "style": {"label": node["value"], "fillColor": style_dict[label]},
         })
         res["links"].append({
             "id": str(node.identity) + '-' + str(e_id),
             "from": node.identity,
             "to": e_id,
-            "style": {"fillColor":"red", "toDecoration":"arrow", "label": rel}
+            "style": {"fillColor":"red", "toDecoration":"arrow", "label": rel},
+            "name": rel_name,
         })
 
     for item in res3:
         node = item['t']
         rel = item['r']
+        rel_name = item['n']
+        print(rel_name)
         props = dict(node)
         label = list(node.labels)[0]
         res["nodes"].append({
             "id": node.identity,
             "label": label,
             "props": props,
-            "style": {"label": node["value"]},
+            "style": {"label": node["value"],"fillColor": style_dict[label]},
         })
         res["links"].append({
             "id": str(e_id) + '-' + str(node.identity),
             "from": e_id,
             "to": node.identity,
-            "style": {"fillColor": "red", "toDecoration": "arrow", "label": rel}
+            "style": {"fillColor": "red", "toDecoration": "arrow", "label": rel},
+            "name": rel_name,
         })
 
     msg = json.dumps(res)
