@@ -128,7 +128,7 @@ def entity_graph(request):
             "id": node.identity,
             "label": label,
             "props": props,
-            "style": {"label": node["value"], "fillColor": style_dict[label]},
+            "style": {"label": node["value"], "fillColor": style_dict[label]if label in style_dict.keys() else "rgba(222,103,44,1)"},
         })
 
     for item in res2:
@@ -141,7 +141,7 @@ def entity_graph(request):
             "id": node.identity,
             "label": label,
             "props": props,
-            "style": {"label": node["value"], "fillColor": style_dict[label]},
+            "style": {"label": node["value"], "fillColor": style_dict[label]if label in style_dict.keys() else "rgba(222,103,44,1)"},
         })
         res["links"].append({
             "id": str(node.identity) + '-' + str(e_id),
@@ -162,7 +162,7 @@ def entity_graph(request):
             "id": node.identity,
             "label": label,
             "props": props,
-            "style": {"label": node["value"],"fillColor": style_dict[label]},
+            "style": {"label": node["value"],"fillColor": style_dict[label]if label in style_dict.keys() else "rgba(222,103,44,1)"},
         })
         res["links"].append({
             "id": str(e_id) + '-' + str(node.identity),
