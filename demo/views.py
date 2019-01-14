@@ -124,11 +124,11 @@ def entity_graph(request):
         node = item['e']
         props = dict(node)
         label = list(node.labels)[0]
-        label = '\n'.join(re.findall(r'.{3}', label))
+        label_split = '\n'.join(re.findall(r'.{3}', label))
         e_id = node.identity
         res["nodes"].append({
             "id": node.identity,
-            "label": label,
+            "label": label_split,
             "props": props,
             "style": {"label": node["value"],"fillColor": style_dict[label]},
         })
