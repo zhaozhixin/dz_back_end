@@ -8,7 +8,6 @@ from py2neo import Graph
 import grpc
 from . import msg_pb2
 from . import msg_pb2_grpc
-import re
 
 # Create your views here.
 
@@ -124,13 +123,12 @@ def entity_graph(request):
         node = item['e']
         props = dict(node)
         label = list(node.labels)[0]
-        label_split = '\n'.join(re.findall(r'.{3}', node["value"]))
         e_id = node.identity
         res["nodes"].append({
             "id": node.identity,
             "label": label,
             "props": props,
-            "style": {"label": label_split, "fillColor": style_dict[label]},
+            "style": {"label": node["value"], "fillColor": style_dict[label]},
         })
 
     for item in res2:
