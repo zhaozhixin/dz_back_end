@@ -62,6 +62,7 @@ def req_recommand(request):
     msg = json.dumps({
         'entities': answer['entities'],
         'recommand': answer_ret,
+        'found': answer['found'],
     })
 
     return HttpResponse(msg)
