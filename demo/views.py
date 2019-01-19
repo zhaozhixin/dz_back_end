@@ -4,18 +4,14 @@ from django.shortcuts import render
 from django.shortcuts import render
 import json
 from django.http import HttpResponse
+from py2neo import Graph
 import grpc
 from . import msg_pb2
 from . import msg_pb2_grpc
-from py2neo import Graph, Node, Relationship
-import pandas as pd
-import numpy as np
-import ahocorasick, sys
-
-graph = Graph('bolt://localhost:7400', username='neo4j', password='1q2w3e')
 
 # Create your views here.
 
+g = Graph("bolt://localhost:7475", password='123')
 style_dict = {
     "Person": "rgba(111,200,184,1)",
     "Interview": "rgba(255,214,24,1)",
@@ -36,61 +32,37 @@ style_dict = {
     "Session": "rgba(222,103,44,1)",
 }
 
-B = ahocorasick.Automaton()
-get_idiom_list_cql = "match (a:IDIOM) return a.value"
-idiom_list = graph.run(get_idiom_list_cql).data()
-if len(idiom_list) > 0:
-    for idiom in idiom_list:
-        phrase = idiom['a.value']
-        B.add_word(phrase, phrase)
-    B.make_automaton()
-
-A = ahocorasick.Automaton()
-get_label_list_cql = "match (a:LABEL) return a.value"
-label_list = graph.run(get_label_list_cql).data()
-if len(label_list) > 0:
-    for label in label_list:
-        i = label['a.value']
-        A.add_word(i, i)
-    A.make_automaton()
 
 def index(request):
     return render(request, 'index.html')
 
-
-def get_idiom_detail(idioms):
-    get_detail_cql = "match (idiom:IDIOM) where idiom.value in %s return idiom.value,idiom.pinyin,idiom.explanation,idiom.source" % str(
-        idioms)
-    idioms_detail = graph.run(get_detail_cql).data()
-
-    for idiom in idioms_detail:
-        get_label_cql = "match (idiom:IDIOM{value:'%s'})-[:tagging]-(label:LABEL)  return label.value" % idiom[
-            'idiom.value']
-        labels = graph.run(get_label_cql).data()
-        label_group = []
-        for i in range(len(labels)):
-            label_group.append(labels[i]['label.value'])
-        idiom['idiom.labels'] = '|'.join(label_group)
-
-    return idioms_detail
-
 def req_recommand(request):
-    text = request.GET.get('input_text')
+    question = request.GET.get('input_text')
 
-    aa = B.iter(text)
-    idiom_found = []
+    with grpc.insecure_channel('localhost:50051') as channel:
+        stub = msg_pb2_grpc.MsgServiceStub(channel)
+        response = stub.GetMsg(msg_pb2.MsgRequest(question=question))
 
-    for item in aa:
-        idiom_found.append(item[1])
-    idiom_found_detail = get_idiom_detail(idiom_found)
+    print("Client received: " + response.answer)
+    if response.answer == 'not found':
+        return HttpResponse('not found')
 
-    entities = {}
-    for idiom in idiom_found:
-        entities[idiom] = ['IDIOM']
+    answer = json.loads(response.answer)
+    answer_ret = answer['answer']
+    try:
+        for i in range(len(answer_ret)):
+            for k, v in answer_ret[i].items():
+                for j in range(len(v)):
+                    res = v[j].split('|||')
+                    if len(res) > 1:
+                        answer_ret[i][k][j] = "<a href='" + res[1] + "' target='_blank'>" + res[0] + "</a>"
+    except Exception as e:
+        pass
 
     msg = json.dumps({
-        'entities': entities,
-        'recommand': idiom_found_detail,
+        'entities': answer['entities'],
+        'recommand': answer_ret,
+        'found': answer['found'],
     })
 
     return HttpResponse(msg)
@@ -111,32 +83,22 @@ def req_search(request):
     return HttpResponse(msg)
 
 def req_qa(request):
-    text = request.GET.get('input_text')
+    question = request.GET.get('input_text')
 
-    aa = A.iter(text)
-    label_idiom_group = []
-    for item in aa:
-        print(item)
-        label = item[1]
-        label_idiom = {}
-        label_idiom['label'] = label
+    with grpc.insecure_channel('localhost:50001') as channel:
+        stub = msg_pb2_grpc.MsgServiceStub(channel)
+        response = stub.GetMsg(msg_pb2.MsgRequest(question=question))
 
-        get_idiom_list_cql = "match (a:LABEL{value:'%s'})-[:tagging]-(idiom:IDIOM) return idiom.value" % label
-        idiom_list = graph.run(get_idiom_list_cql).data()
-        idioms = []
-        for i in idiom_list:
-            idioms.append(i['idiom.value'])
-        idioms_detail = get_idiom_detail(idioms)
-        label_idiom['idioms'] = idioms_detail
-        label_idiom_group.append(label_idiom)
+    print("Client received: " + response.answer)
+    if response.answer == 'not found':
+        return HttpResponse('not found')
 
-    entities = {}
-    for idiom in idioms:
-        entities[idiom] = ['IDIOM']
+    answer = json.loads(response.answer)
+    print(answer)
 
     msg = json.dumps({
-        'entities': entities,
-        'recommand': label_idiom_group,
+        'entities': answer['entities'],
+        'recommand': answer['answer'],
     })
     return HttpResponse(msg)
 
@@ -148,9 +110,9 @@ def entity_graph(request):
     query2 = "MATCH (h)-[r]->(e:{0}) where e.value = '{1}' return h,type(r) as r,r.name as n limit 50".format(label,value)
     query3 = "MATCH (e:{0})-[r]->(t) where e.value = '{1}' return t,type(r) as r,r.name as n limit 50".format(label,value)
 
-    res1 = graph.run(query1).data()
-    res2 = graph.run(query2).data()
-    res3 = graph.run(query3).data()
+    res1 = g.run(query1).data()
+    res2 = g.run(query2).data()
+    res3 = g.run(query3).data()
 
     res = {
         "nodes": [],
@@ -194,6 +156,7 @@ def entity_graph(request):
         node = item['t']
         rel = item['r']
         rel_name = item['n']
+        print(rel_name)
         props = dict(node)
         label = list(node.labels)[0]
         res["nodes"].append({
